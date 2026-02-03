@@ -215,9 +215,89 @@ async function deleteGatePass(gatePassID) {
   }
 }
 
+// Update existing gate pass
+async function updateGatePass(gatePassData) {
+  try {
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin();
+
+    try {
+      // Update header
+      const headerResult = await transaction
+        .request()
+        .input('gatePassID', sql.NVarChar, gatePassData.id)
+        .input('gatePassNo', sql.NVarChar, gatePassData.gatepassNo)
+        .input('date', sql.DateTime, new Date(gatePassData.date))
+        .input('destination', sql.NVarChar, gatePassData.destination)
+        .input('carriedBy', sql.NVarChar, gatePassData.carriedBy)
+        .input('through', sql.NVarChar, gatePassData.through)
+        .query(`
+          UPDATE GatePassHeader
+          SET GatePassNo = @gatePassNo,
+              Date = @date,
+              Destination = @destination,
+              CarriedBy = @carriedBy,
+              Through = @through
+          WHERE GatePassID = @gatePassID
+        `);
+
+      if (headerResult.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return {
+          success: false,
+          message: 'Gate pass not found',
+        };
+      }
+
+      // Replace line items
+      await transaction
+        .request()
+        .input('gatePassID', sql.NVarChar, gatePassData.id)
+        .query(`
+          DELETE FROM GatePassLineItems
+          WHERE GatePassID = @gatePassID
+        `);
+
+      for (const item of gatePassData.items) {
+        await transaction
+          .request()
+          .input('gatePassID', sql.NVarChar, gatePassData.id)
+          .input('slNo', sql.Int, item.slNo)
+          .input('description', sql.NVarChar, item.description)
+          .input('model', sql.NVarChar, item.model)
+          .input('serialNo', sql.NVarChar, item.serialNo)
+          .input('qty', sql.Int, item.qty)
+          .query(`
+            INSERT INTO GatePassLineItems 
+              (GatePassID, SlNo, Description, Model, SerialNo, Qty)
+            VALUES 
+              (@gatePassID, @slNo, @description, @model, @serialNo, @qty)
+          `);
+      }
+
+      await transaction.commit();
+
+      return {
+        success: true,
+        message: 'Gate pass updated successfully',
+        gatePassId: gatePassData.id,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Update gate pass error:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   loginUser,
   getGatePasses,
   createGatePass,
   deleteGatePass,
+  updateGatePass,
 };

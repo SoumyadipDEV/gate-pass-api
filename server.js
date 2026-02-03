@@ -20,6 +20,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const userHeader = req.headers['x-user'];
+  const path = req.path;
+  const body = req.body;
+  console.log(`Request Path: ${path}, User: ${userHeader || 'Anonymous'}, Body: ${JSON.stringify(body)}`);
+  next();
+});
+
 // API routes
 app.use('/api', apiRoutes);
 
@@ -60,6 +69,7 @@ async function startServer() {
   - POST   /api/auth/login       - User login
   - GET    /api/gatepass         - Get all gate passes
   - POST   /api/gatepass         - Create gate pass
+  - PATCH  /api/gatepass         - Update gate pass
   - DELETE /api/gatepassdelete/:id - Delete gate pass
   
   ========================================
