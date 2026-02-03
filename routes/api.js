@@ -56,6 +56,7 @@ router.post('/gatepass', async (req, res) => {
       !gatePassData.destination ||
       !gatePassData.carriedBy ||
       !gatePassData.through ||
+      !gatePassData.mobileNo ||
       !gatePassData.createdBy ||
       !gatePassData.items ||
       gatePassData.items.length === 0
@@ -107,6 +108,7 @@ router.patch('/gatepass', async (req, res) => {
       !gatePassData.destination ||
       !gatePassData.carriedBy ||
       !gatePassData.through ||
+      !gatePassData.mobileNo ||
       !gatePassData.items ||
       gatePassData.items.length === 0
     ) {

@@ -50,6 +50,7 @@ async function getGatePasses() {
         h.Destination,
         h.CarriedBy,
         h.Through,
+        h.MobileNo,
         h.CreatedBy,
         h.CreatedAt,
         l.LineItemID,
@@ -75,6 +76,7 @@ async function getGatePasses() {
           destination: row.Destination,
           carriedBy: row.CarriedBy,
           through: row.Through,
+          mobileNo: row.MobileNo,
           id: row.GatePassID,
           createdBy: row.CreatedBy,
           createdAt: row.CreatedAt,
@@ -120,13 +122,14 @@ async function createGatePass(gatePassData) {
         .input('destination', sql.NVarChar, gatePassData.destination)
         .input('carriedBy', sql.NVarChar, gatePassData.carriedBy)
         .input('through', sql.NVarChar, gatePassData.through)
+        .input('mobileNo', sql.NVarChar, gatePassData.mobileNo)
         .input('createdBy', sql.NVarChar, gatePassData.createdBy)
         .input('createdAt', sql.DateTime, new Date())
         .query(`
           INSERT INTO GatePassHeader 
-            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, CreatedBy, CreatedAt)
+            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt)
           VALUES 
-            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @createdBy, @createdAt)
+            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt)
         `);
 
       // Insert line items
@@ -233,13 +236,15 @@ async function updateGatePass(gatePassData) {
         .input('destination', sql.NVarChar, gatePassData.destination)
         .input('carriedBy', sql.NVarChar, gatePassData.carriedBy)
         .input('through', sql.NVarChar, gatePassData.through)
+        .input('mobileNo', sql.NVarChar, gatePassData.mobileNo)
         .query(`
           UPDATE GatePassHeader
           SET GatePassNo = @gatePassNo,
               Date = @date,
               Destination = @destination,
               CarriedBy = @carriedBy,
-              Through = @through
+              Through = @through,
+              MobileNo = @mobileNo
           WHERE GatePassID = @gatePassID
         `);
 
