@@ -53,6 +53,9 @@ async function getGatePasses() {
         h.MobileNo,
         h.CreatedBy,
         h.CreatedAt,
+        h.ModifiedBy,
+        h.ModifiedAt,
+        h.IsEnable,
         l.LineItemID,
         l.SlNo,
         l.Description,
@@ -80,6 +83,9 @@ async function getGatePasses() {
           id: row.GatePassID,
           createdBy: row.CreatedBy,
           createdAt: row.CreatedAt,
+          modifiedBy: row.ModifiedBy,
+          modifiedAt: row.ModifiedAt,
+          isEnable: row.IsEnable,
         });
       }
 
@@ -110,6 +116,13 @@ async function createGatePass(gatePassData) {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
 
+    const modifiedBy = gatePassData.modifiedBy ?? null;
+    const modifiedAt = gatePassData.modifiedAt ? new Date(gatePassData.modifiedAt) : null;
+    const isEnable =
+      gatePassData.isEnable === undefined || gatePassData.isEnable === null
+        ? 1
+        : Number(gatePassData.isEnable);
+
     await transaction.begin();
 
     try {
@@ -125,11 +138,14 @@ async function createGatePass(gatePassData) {
         .input('mobileNo', sql.NVarChar, gatePassData.mobileNo)
         .input('createdBy', sql.NVarChar, gatePassData.createdBy)
         .input('createdAt', sql.DateTime, new Date())
+        .input('modifiedBy', sql.NVarChar, modifiedBy)
+        .input('modifiedAt', sql.DateTime, modifiedAt)
+        .input('isEnable', sql.Int, isEnable)
         .query(`
           INSERT INTO GatePassHeader 
-            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt)
+            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt, ModifiedBy, ModifiedAt, IsEnable)
           VALUES 
-            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt)
+            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt, @modifiedBy, @modifiedAt, @isEnable)
         `);
 
       // Insert line items
@@ -224,6 +240,13 @@ async function updateGatePass(gatePassData) {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
 
+    const modifiedBy = gatePassData.modifiedBy ?? null;
+    const modifiedAt = gatePassData.modifiedAt ? new Date(gatePassData.modifiedAt) : null;
+    const isEnable =
+      gatePassData.isEnable === undefined || gatePassData.isEnable === null
+        ? null
+        : Number(gatePassData.isEnable);
+
     await transaction.begin();
 
     try {
@@ -237,6 +260,9 @@ async function updateGatePass(gatePassData) {
         .input('carriedBy', sql.NVarChar, gatePassData.carriedBy)
         .input('through', sql.NVarChar, gatePassData.through)
         .input('mobileNo', sql.NVarChar, gatePassData.mobileNo)
+        .input('modifiedBy', sql.NVarChar, modifiedBy)
+        .input('modifiedAt', sql.DateTime, modifiedAt)
+        .input('isEnable', sql.Int, isEnable)
         .query(`
           UPDATE GatePassHeader
           SET GatePassNo = @gatePassNo,
@@ -244,7 +270,10 @@ async function updateGatePass(gatePassData) {
               Destination = @destination,
               CarriedBy = @carriedBy,
               Through = @through,
-              MobileNo = @mobileNo
+              MobileNo = @mobileNo,
+              ModifiedBy = COALESCE(@modifiedBy, ModifiedBy),
+              ModifiedAt = COALESCE(@modifiedAt, ModifiedAt),
+              IsEnable = COALESCE(@isEnable, IsEnable)
           WHERE GatePassID = @gatePassID
         `);
 

@@ -2,6 +2,7 @@
 CREATE TABLE UserDetails (
   UserId INT PRIMARY KEY IDENTITY(1,1),
   Email NVARCHAR(255) NOT NULL UNIQUE,
+  UserName NVARCHAR(255) NOT NULL,
   Password NVARCHAR(255) NOT NULL,
   IsActive INT NOT NULL DEFAULT 1
 );
@@ -14,8 +15,12 @@ CREATE TABLE GatePassHeader (
   Destination NVARCHAR(255) NOT NULL,
   CarriedBy NVARCHAR(255) NOT NULL,
   Through NVARCHAR(255) NOT NULL,
+  MobileNo NVARCHAR(50) NOT NULL,
   CreatedBy NVARCHAR(255) NOT NULL,
-  CreatedAt DATETIME NOT NULL
+  CreatedAt DATETIME NOT NULL,
+  ModifiedBy NVARCHAR(255) NULL,
+  ModifiedAt DATETIME NULL,
+  IsEnable INT NOT NULL DEFAULT 1
 );
 
 -- Create GatePassLineItems table
@@ -31,15 +36,15 @@ CREATE TABLE GatePassLineItems (
 );
 
 -- Sample data for UserDetails
-INSERT INTO UserDetails (Email, Password, IsActive)
+INSERT INTO UserDetails (Email, UserName, Password, IsActive)
 VALUES 
-  ('It.services@surakshanet.com', 'password123', 1),
-  ('user@example.com', 'testpass', 1);
+  ('It.services@surakshanet.com', 'IT Services', 'password123', 1),
+  ('user@example.com', 'Example User', 'testpass', 1);
 
 -- Sample data for GatePassHeader
-INSERT INTO GatePassHeader (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, CreatedBy, CreatedAt)
+INSERT INTO GatePassHeader (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt, ModifiedBy, ModifiedAt, IsEnable)
 VALUES 
-  ('1769264370159-doch5ns1k', 'SDLGP20260124-6859', '2026-01-24T14:17:25.472Z', 'Phoolbagan (PHL)', 'Bhupen Shaoo', 'Logistics', 'It.services@surakshanet.com', '2026-01-24T14:19:30.159Z');
+  ('1769264370159-doch5ns1k', 'SDLGP20260124-6859', '2026-01-24T14:17:25.472Z', 'Phoolbagan (PHL)', 'Bhupen Shaoo', 'Logistics', '9876543210', 'It.services@surakshanet.com', '2026-01-24T14:19:30.159Z', NULL, NULL, 1);
 
 -- Sample data for GatePassLineItems
 INSERT INTO GatePassLineItems (GatePassID, SlNo, Description, Model, SerialNo, Qty)
