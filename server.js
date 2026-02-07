@@ -66,6 +66,7 @@ async function startServer() {
   Health Check: http://localhost:${PORT}/health
   
   Endpoints:
+  - POST   /api/createlogin     - Create login user
   - POST   /api/auth/login       - User login
   - GET    /api/gatepass         - Get all gate passes
   - POST   /api/gatepass         - Create gate pass

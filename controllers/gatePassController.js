@@ -1,5 +1,50 @@
 const { getConnection, sql } = require('../config/database');
 
+// Create a new login/user
+async function createLogin(userData) {
+  const { email, userName, password } = userData;
+  const isActive = userData.isActive === undefined || userData.isActive === null ? 1 : Number(userData.isActive);
+
+  if (!email || !userName || !password) {
+    return { success: false, message: 'Email, userName and password are required' };
+  }
+
+  try {
+    const pool = await getConnection();
+
+    // Check if user already exists
+    const existing = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .query('SELECT UserId FROM UserDetails WHERE Email = @email');
+
+    if (existing.recordset.length > 0) {
+      return { success: false, message: 'User already exists with this email' };
+    }
+
+    const insertResult = await pool
+      .request()
+      .input('email', sql.NVarChar, email)
+      .input('userName', sql.NVarChar, userName)
+      .input('password', sql.NVarChar, password)
+      .input('isActive', sql.Int, isActive)
+      .query(`
+        INSERT INTO UserDetails (Email, UserName, Password, IsActive)
+        OUTPUT INSERTED.UserId
+        VALUES (@email, @userName, @password, @isActive)
+      `);
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      userId: insertResult.recordset[0].UserId,
+    };
+  } catch (error) {
+    console.error('Create login error:', error);
+    throw error;
+  }
+}
+
 function buildLineItemsInsertQuery(request, gatePassID, items) {
   request.input('gatePassID', sql.NVarChar, gatePassID);
 
@@ -322,6 +367,7 @@ async function updateGatePass(gatePassData) {
 }
 
 module.exports = {
+  createLogin,
   loginUser,
   getGatePasses,
   createGatePass,

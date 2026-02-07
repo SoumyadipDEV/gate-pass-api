@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { loginUser, getGatePasses, createGatePass, deleteGatePass, updateGatePass } = require('../controllers/gatePassController');
+const { createLogin, loginUser, getGatePasses, createGatePass, deleteGatePass, updateGatePass } = require('../controllers/gatePassController');
 const { sendGatePassCreatedAlert, sendGatePassUpdatedAlert } = require('../services/mailService');
 
 // Login endpoint
@@ -157,6 +157,24 @@ router.patch('/gatepass', async (req, res) => {
     res.status(statusCode).json(result);
   } catch (error) {
     console.error('Update gate pass endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+// Create login/user endpoint
+router.post('/createlogin', async (req, res) => {
+  try {
+    const userData = req.body;
+
+    const result = await createLogin(userData);
+    const statusCode = result.success ? 201 : result.message && result.message.includes('exists') ? 409 : 400;
+    res.status(statusCode).json(result);
+  } catch (error) {
+    console.error('Create login endpoint error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

@@ -62,6 +62,22 @@ function buildItemsRows(items = []) {
 
 function buildGatePassTemplateData(alertType, gatePass) {
   const isCreate = alertType === ALERT_TYPES.CREATED;
+  const createdByRow = gatePass?.createdBy
+    ? `
+        <tr>
+          <td class="label">Created By</td>
+          <td>${escapeHtml(gatePass.createdBy)}</td>
+        </tr>`
+    : '';
+
+  const modifiedByRow = gatePass?.modifiedBy
+    ? `
+        <tr>
+          <td class="label">Modified By</td>
+          <td>${escapeHtml(gatePass.modifiedBy)}</td>
+        </tr>`
+    : '';
+
   const enableRow =
     !isCreate && gatePass?.isEnable !== undefined && gatePass?.isEnable !== null
       ? `
@@ -85,6 +101,8 @@ function buildGatePassTemplateData(alertType, gatePass) {
     date: formatDate(gatePass?.date),
     itemsRows: buildItemsRows(gatePass?.items),
     alertTimestamp: formatDate(new Date()),
+    createdByRow,
+    modifiedByRow,
     enableRow,
   };
 }
