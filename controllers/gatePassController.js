@@ -1,5 +1,24 @@
 const { getConnection, sql } = require('../config/database');
 
+function buildLineItemsInsertQuery(request, gatePassID, items) {
+  request.input('gatePassID', sql.NVarChar, gatePassID);
+
+  const values = items.map((item, index) => {
+    request.input(`slNo${index}`, sql.Int, item.slNo);
+    request.input(`description${index}`, sql.NVarChar, item.description);
+    request.input(`model${index}`, sql.NVarChar, item.model);
+    request.input(`serialNo${index}`, sql.NVarChar, item.serialNo);
+    request.input(`qty${index}`, sql.Int, item.qty);
+
+    return `(@gatePassID, @slNo${index}, @description${index}, @model${index}, @serialNo${index}, @qty${index})`;
+  });
+
+  return `
+    INSERT INTO GatePassLineItems (GatePassID, SlNo, Description, Model, SerialNo, Qty)
+    VALUES ${values.join(',\n          ')}
+  `;
+}
+
 // Login API
 async function loginUser(email, password) {
   try {
@@ -148,23 +167,10 @@ async function createGatePass(gatePassData) {
             (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt, @modifiedBy, @modifiedAt, @isEnable)
         `);
 
-      // Insert line items
-      for (const item of gatePassData.items) {
-        await transaction
-          .request()
-          .input('gatePassID', sql.NVarChar, gatePassData.id)
-          .input('slNo', sql.Int, item.slNo)
-          .input('description', sql.NVarChar, item.description)
-          .input('model', sql.NVarChar, item.model)
-          .input('serialNo', sql.NVarChar, item.serialNo)
-          .input('qty', sql.Int, item.qty)
-          .query(`
-            INSERT INTO GatePassLineItems 
-              (GatePassID, SlNo, Description, Model, SerialNo, Qty)
-            VALUES 
-              (@gatePassID, @slNo, @description, @model, @serialNo, @qty)
-          `);
-      }
+      // Insert line items in one round trip to reduce latency.
+      const itemsRequest = transaction.request();
+      const insertItemsQuery = buildLineItemsInsertQuery(itemsRequest, gatePassData.id, gatePassData.items);
+      await itemsRequest.query(insertItemsQuery);
 
       await transaction.commit();
 
@@ -285,7 +291,7 @@ async function updateGatePass(gatePassData) {
         };
       }
 
-      // Replace line items
+      // Replace line items with a single bulk insert.
       await transaction
         .request()
         .input('gatePassID', sql.NVarChar, gatePassData.id)
@@ -294,22 +300,9 @@ async function updateGatePass(gatePassData) {
           WHERE GatePassID = @gatePassID
         `);
 
-      for (const item of gatePassData.items) {
-        await transaction
-          .request()
-          .input('gatePassID', sql.NVarChar, gatePassData.id)
-          .input('slNo', sql.Int, item.slNo)
-          .input('description', sql.NVarChar, item.description)
-          .input('model', sql.NVarChar, item.model)
-          .input('serialNo', sql.NVarChar, item.serialNo)
-          .input('qty', sql.Int, item.qty)
-          .query(`
-            INSERT INTO GatePassLineItems 
-              (GatePassID, SlNo, Description, Model, SerialNo, Qty)
-            VALUES 
-              (@gatePassID, @slNo, @description, @model, @serialNo, @qty)
-          `);
-      }
+      const itemsRequest = transaction.request();
+      const insertItemsQuery = buildLineItemsInsertQuery(itemsRequest, gatePassData.id, gatePassData.items);
+      await itemsRequest.query(insertItemsQuery);
 
       await transaction.commit();
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { loginUser, getGatePasses, createGatePass, deleteGatePass, updateGatePass } = require('../controllers/gatePassController');
+const { sendGatePassCreatedAlert, sendGatePassUpdatedAlert } = require('../services/mailService');
 
 // Login endpoint
 router.post('/auth/login', async (req, res) => {
@@ -84,6 +85,14 @@ router.post('/gatepass', async (req, res) => {
     }
 
     const result = await createGatePass(gatePassData);
+
+    // Fire-and-forget email to avoid blocking the response path.
+    setImmediate(() => {
+      sendGatePassCreatedAlert(gatePassData).catch((mailError) =>
+        console.error('Create gate pass alert email failed:', mailError)
+      );
+    });
+
     res.status(201).json(result);
   } catch (error) {
     console.error('Create gate pass endpoint error:', error);
@@ -135,6 +144,15 @@ router.patch('/gatepass', async (req, res) => {
     }
 
     const result = await updateGatePass(gatePassData);
+
+    if (result.success) {
+      setImmediate(() => {
+        sendGatePassUpdatedAlert(gatePassData).catch((mailError) =>
+          console.error('Update gate pass alert email failed:', mailError)
+        );
+      });
+    }
+
     const statusCode = result.success ? 200 : 404;
     res.status(statusCode).json(result);
   } catch (error) {

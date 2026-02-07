@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; padding: 0; background: #f6f7fb; font-family: Arial, sans-serif; color: #1f2933; }
+    .wrapper { width: 100%; padding: 24px; box-sizing: border-box; }
+    .card { max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 10px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 10px 30px rgba(17, 24, 39, 0.08); }
+    /* Outlook (Word engine) ignores gradients, so set a solid fallback first */
+    .header { padding: 20px 24px; background: #0d47a1; background-image: linear-gradient(135deg, #0d47a1, #1976d2); color: #ffffff !important; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 1px; font-size: 12px; margin: 0 0 6px 0; opacity: 0.9; }
+    h2 { margin: 0; font-size: 24px; }
+    .content { padding: 24px; }
+    .summary { margin: 0 0 16px 0; color: #4b5563; line-height: 1.5; }
+    .meta { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .meta td { padding: 8px 10px; border: 1px solid #e5e7eb; font-size: 14px; }
+    .meta td.label { background: #f9fafb; font-weight: 600; width: 180px; }
+    .items-title { margin: 0 0 8px 0; font-size: 16px; }
+    .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 12px; }
+    .items { width: 100%; border-collapse: collapse; }
+    .items th, .items td { padding: 10px; border: 1px solid #e5e7eb; font-size: 13px; text-align: left; }
+    .items th { background: #f3f4f6; text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px; }
+    .footer { padding: 16px 24px 20px 24px; color: #6b7280; font-size: 12px; background: #f9fafb; }
+    @media (max-width: 640px) {
+      .wrapper { padding: 16px; }
+      .content { padding: 16px; }
+      .table-scroll { margin-left: -4px; margin-right: -4px; padding: 0 4px 12px; }
+      .items { min-width: 520px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <p class="eyebrow">{{eventLabel}}</p>
+        <h2>{{title}}</h2>
+      </div>
+      <div class="content">
+        <p class="summary">{{summary}}</p>
+
+        <table class="meta" role="presentation" cellspacing="0" cellpadding="0">
+          <tr>
+            <td class="label">Gate Pass Date</td>
+            <td>{{date}}</td>
+          </tr>
+          <tr>
+            <td class="label">Destination</td>
+            <td>{{destination}}</td>
+          </tr>
+          <tr>
+            <td class="label">Carried By</td>
+            <td>{{carriedBy}}</td>
+          </tr>
+          <tr>
+            <td class="label">Through</td>
+            <td>{{through}}</td>
+          </tr>
+          <tr>
+            <td class="label">Mobile No.</td>
+            <td>{{mobileNo}}</td>
+          </tr>
+        <tr>
+          <td class="label">Created/Updated By</td>
+          <td>{{createdBy}}</td>
+        </tr>
+        {{enableRow}}
+      </table>
+
+        <p class="items-title">Line Items</p>
+        <div class="table-scroll">
+          <table class="items" role="presentation" cellspacing="0" cellpadding="0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Model</th>
+                <th>Serial No.</th>
+                <th>Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{itemsRows}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="footer">
+        <div>Automated alert • Gate Pass Service</div>
+        <div>Suraksha Diagnostics Limited</div>
+        <div>Sent at {{alertTimestamp}}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
