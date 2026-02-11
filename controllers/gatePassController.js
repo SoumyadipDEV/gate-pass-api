@@ -51,15 +51,16 @@ function buildLineItemsInsertQuery(request, gatePassID, items) {
   const values = items.map((item, index) => {
     request.input(`slNo${index}`, sql.Int, item.slNo);
     request.input(`description${index}`, sql.NVarChar, item.description);
+    request.input(`makeItem${index}`, sql.NVarChar, item.makeItem);
     request.input(`model${index}`, sql.NVarChar, item.model);
     request.input(`serialNo${index}`, sql.NVarChar, item.serialNo);
     request.input(`qty${index}`, sql.Int, item.qty);
 
-    return `(@gatePassID, @slNo${index}, @description${index}, @model${index}, @serialNo${index}, @qty${index})`;
+    return `(@gatePassID, @slNo${index}, @description${index}, @makeItem${index}, @model${index}, @serialNo${index}, @qty${index})`;
   });
 
   return `
-    INSERT INTO GatePassLineItems (GatePassID, SlNo, Description, Model, SerialNo, Qty)
+    INSERT INTO GatePassLineItems (GatePassID, SlNo, Description, MakeItem, Model, SerialNo, Qty)
     VALUES ${values.join(',\n          ')}
   `;
 }
@@ -120,9 +121,11 @@ async function getGatePasses() {
         h.ModifiedBy,
         h.ModifiedAt,
         h.IsEnable,
+        h.Returnable,
         l.LineItemID,
         l.SlNo,
         l.Description,
+        l.MakeItem,
         l.Model,
         l.SerialNo,
         l.Qty
@@ -150,6 +153,7 @@ async function getGatePasses() {
           modifiedBy: row.ModifiedBy,
           modifiedAt: row.ModifiedAt,
           isEnable: row.IsEnable,
+          returnable: row.Returnable,
         });
       }
 
@@ -157,6 +161,7 @@ async function getGatePasses() {
         gatePassMap.get(row.GatePassID).items.push({
           slNo: row.SlNo,
           description: row.Description,
+          makeItem: row.MakeItem,
           model: row.Model,
           serialNo: row.SerialNo,
           qty: row.Qty,
@@ -186,6 +191,10 @@ async function createGatePass(gatePassData) {
       gatePassData.isEnable === undefined || gatePassData.isEnable === null
         ? 1
         : Number(gatePassData.isEnable);
+    const returnable =
+      gatePassData.returnable === undefined || gatePassData.returnable === null
+        ? 0
+        : Number(gatePassData.returnable);
 
     await transaction.begin();
 
@@ -205,11 +214,12 @@ async function createGatePass(gatePassData) {
         .input('modifiedBy', sql.NVarChar, modifiedBy)
         .input('modifiedAt', sql.DateTime, modifiedAt)
         .input('isEnable', sql.Int, isEnable)
+        .input('returnable', sql.Int, returnable)
         .query(`
           INSERT INTO GatePassHeader 
-            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt, ModifiedBy, ModifiedAt, IsEnable)
+            (GatePassID, GatePassNo, Date, Destination, CarriedBy, Through, MobileNo, CreatedBy, CreatedAt, ModifiedBy, ModifiedAt, IsEnable, Returnable)
           VALUES 
-            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt, @modifiedBy, @modifiedAt, @isEnable)
+            (@gatePassID, @gatePassNo, @date, @destination, @carriedBy, @through, @mobileNo, @createdBy, @createdAt, @modifiedBy, @modifiedAt, @isEnable, @returnable)
         `);
 
       // Insert line items in one round trip to reduce latency.
@@ -297,6 +307,10 @@ async function updateGatePass(gatePassData) {
       gatePassData.isEnable === undefined || gatePassData.isEnable === null
         ? null
         : Number(gatePassData.isEnable);
+    const returnable =
+      gatePassData.returnable === undefined || gatePassData.returnable === null
+        ? null
+        : Number(gatePassData.returnable);
 
     await transaction.begin();
 
@@ -314,6 +328,7 @@ async function updateGatePass(gatePassData) {
         .input('modifiedBy', sql.NVarChar, modifiedBy)
         .input('modifiedAt', sql.DateTime, modifiedAt)
         .input('isEnable', sql.Int, isEnable)
+        .input('returnable', sql.Int, returnable)
         .query(`
           UPDATE GatePassHeader
           SET GatePassNo = @gatePassNo,
@@ -324,7 +339,8 @@ async function updateGatePass(gatePassData) {
               MobileNo = @mobileNo,
               ModifiedBy = COALESCE(@modifiedBy, ModifiedBy),
               ModifiedAt = COALESCE(@modifiedAt, ModifiedAt),
-              IsEnable = COALESCE(@isEnable, IsEnable)
+              IsEnable = COALESCE(@isEnable, IsEnable),
+              Returnable = COALESCE(@returnable, Returnable)
           WHERE GatePassID = @gatePassID
         `);
 

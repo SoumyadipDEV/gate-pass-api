@@ -26,7 +26,7 @@
       .wrapper { padding: 16px; }
       .content { padding: 16px; }
       .table-scroll { margin-left: -4px; margin-right: -4px; padding: 0 4px 12px; }
-      .items { min-width: 520px; }
+      .items { min-width: 620px; }
     }
   </style>
 </head>
@@ -61,6 +61,7 @@
             <td class="label">Mobile No.</td>
             <td>{{mobileNo}}</td>
           </tr>
+          {{returnableRow}}
           {{createdByRow}}
           {{modifiedByRow}}
           {{enableRow}}
@@ -73,6 +74,7 @@
               <tr>
                 <th>#</th>
                 <th>Description</th>
+                <th>Make / Item</th>
                 <th>Model</th>
                 <th>Serial No.</th>
                 <th>Qty</th>

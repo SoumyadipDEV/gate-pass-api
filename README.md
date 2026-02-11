@@ -72,9 +72,10 @@ Express + MSSQL service for managing gate passes, their line items, and email al
 - `POST /auth/login` – Body: `{ email, password }` → returns user info when active; 401 otherwise.
 - `GET /gatepass` – Returns array of gate passes with nested `items`.
 - `POST /gatepass` – Create gate pass. Required body fields:  
-  `id` (GatePassID), `gatepassNo`, `date`, `destination`, `carriedBy`, `through`, `mobileNo`, `createdBy`, `items` (array of `{ slNo, description, model, serialNo, qty }`).  
+  `id` (GatePassID), `gatepassNo`, `date`, `destination`, `carriedBy`, `through`, `mobileNo`, `createdBy`, `items` (array of `{ slNo, description, makeItem, model, serialNo, qty }`).  
+  Optional: `returnable` (int; 1 = yes, 0 = no; defaults to 0), `isEnable` (int; defaults to 1).  
   Sends “created” alert email asynchronously.
-- `PATCH /gatepass` – Update gate pass. Same fields as create; accepts `modifiedBy`, `modifiedAt`, `isEnable`. Replaces all line items. Sends “updated” alert on success.
+- `PATCH /gatepass` – Update gate pass. Same fields as create; accepts `modifiedBy`, `modifiedAt`, `isEnable`, `returnable`. Replaces all line items. Sends “updated” alert on success.
 - `DELETE /gatepassdelete/:id` – Deletes header + items transactionally; 404 if not found.
 
 Common responses  

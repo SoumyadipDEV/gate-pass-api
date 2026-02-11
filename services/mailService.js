@@ -43,7 +43,7 @@ function formatDate(value) {
 
 function buildItemsRows(items = []) {
   if (!items.length) {
-    return '<tr><td colspan="5" style="padding: 8px; color: #6b7280;">No line items provided.</td></tr>';
+    return '<tr><td colspan="6" style="padding: 8px; color: #6b7280;">No line items provided.</td></tr>';
   }
 
   return items
@@ -52,6 +52,7 @@ function buildItemsRows(items = []) {
       <tr>
         <td>${escapeHtml(item.slNo)}</td>
         <td>${escapeHtml(item.description)}</td>
+        <td>${escapeHtml(item.makeItem)}</td>
         <td>${escapeHtml(item.model)}</td>
         <td>${escapeHtml(item.serialNo)}</td>
         <td>${escapeHtml(item.qty)}</td>
@@ -87,6 +88,15 @@ function buildGatePassTemplateData(alertType, gatePass) {
         </tr>`
       : '';
 
+  const returnableRow =
+    gatePass?.returnable !== undefined && gatePass?.returnable !== null
+      ? `
+        <tr>
+          <td class="label">Returnable</td>
+          <td>${gatePass.returnable ? 'Yes' : 'No'}</td>
+        </tr>`
+      : '';
+
   return {
     eventLabel: isCreate ? 'New Gate Pass Created' : 'Gate Pass Updated',
     title: gatePass?.gatepassNo ? `Gate Pass ${escapeHtml(gatePass.gatepassNo)}` : 'Gate Pass Alert',
@@ -104,6 +114,7 @@ function buildGatePassTemplateData(alertType, gatePass) {
     createdByRow,
     modifiedByRow,
     enableRow,
+    returnableRow,
   };
 }
 

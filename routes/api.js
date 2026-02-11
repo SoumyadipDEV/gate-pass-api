@@ -73,6 +73,7 @@ router.post('/gatepass', async (req, res) => {
       if (
         item.slNo === undefined ||
         !item.description ||
+        !item.makeItem ||
         !item.model ||
         !item.serialNo ||
         item.qty === undefined
@@ -132,6 +133,7 @@ router.patch('/gatepass', async (req, res) => {
       if (
         item.slNo === undefined ||
         !item.description ||
+        !item.makeItem ||
         !item.model ||
         !item.serialNo ||
         item.qty === undefined
