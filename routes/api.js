@@ -1,6 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { createLogin, loginUser, getGatePasses, createGatePass, deleteGatePass, updateGatePass } = require('../controllers/gatePassController');
+const {
+  createLogin,
+  loginUser,
+  getGatePasses,
+  createGatePass,
+  deleteGatePass,
+  updateGatePass,
+  createDestination,
+  getDestinations,
+} = require('../controllers/gatePassController');
 const { sendGatePassCreatedAlert, sendGatePassUpdatedAlert } = require('../services/mailService');
 
 // Login endpoint
@@ -159,6 +168,46 @@ router.patch('/gatepass', async (req, res) => {
     res.status(statusCode).json(result);
   } catch (error) {
     console.error('Update gate pass endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+// Create destination
+router.post('/dest/create', async (req, res) => {
+  try {
+    const destinationData = req.body;
+
+    if (!destinationData.destinationName || !destinationData.destinationCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'destinationName and destinationCode are required',
+      });
+    }
+
+    const result = await createDestination(destinationData);
+    const statusCode = result.success ? 201 : result.message && result.message.includes('exists') ? 409 : 400;
+    res.status(statusCode).json(result);
+  } catch (error) {
+    console.error('Create destination endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+// Get all destinations
+router.get('/dest', async (req, res) => {
+  try {
+    const result = await getDestinations();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Get destinations endpoint error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

@@ -7,6 +7,15 @@ CREATE TABLE UserDetails (
   IsActive INT NOT NULL DEFAULT 1
 );
 
+-- Create GatePassDestinationTable to store allowed destinations
+CREATE TABLE GatePassDestinationTable (
+  Id INT PRIMARY KEY IDENTITY(1,1),
+  DestinationName NVARCHAR(255) NOT NULL,
+  DestinationCode NVARCHAR(50) NOT NULL,
+  EmailID NVARCHAR(255) NULL,
+  IsActive INT NOT NULL DEFAULT 1
+);
+
 -- Create GatePassHeader table
 CREATE TABLE GatePassHeader (
   GatePassID NVARCHAR(50) PRIMARY KEY,

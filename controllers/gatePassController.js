@@ -382,6 +382,74 @@ async function updateGatePass(gatePassData) {
   }
 }
 
+// Create a destination entry
+async function createDestination(destinationData) {
+  const { destinationName, destinationCode, emailID } = destinationData;
+  const isActive =
+    destinationData.isActive === undefined || destinationData.isActive === null
+      ? 1
+      : Number(destinationData.isActive);
+
+  if (!destinationName || !destinationCode) {
+    return { success: false, message: 'destinationName and destinationCode are required' };
+  }
+
+  try {
+    const pool = await getConnection();
+
+    // Optional: prevent duplicate codes
+    const existing = await pool
+      .request()
+      .input('destinationCode', sql.NVarChar, destinationCode)
+      .query('SELECT Id FROM GatePassDestinationTable WHERE DestinationCode = @destinationCode');
+
+    if (existing.recordset.length > 0) {
+      return { success: false, message: 'Destination with this code already exists' };
+    }
+
+    const insertResult = await pool
+      .request()
+      .input('destinationName', sql.NVarChar, destinationName)
+      .input('destinationCode', sql.NVarChar, destinationCode)
+      .input('emailID', sql.NVarChar, emailID || null)
+      .input('isActive', sql.Int, isActive)
+      .query(`
+        INSERT INTO GatePassDestinationTable (DestinationName, DestinationCode, EmailID, IsActive)
+        OUTPUT INSERTED.Id
+        VALUES (@destinationName, @destinationCode, @emailID, @isActive)
+      `);
+
+    return {
+      success: true,
+      message: 'Destination created successfully',
+      id: insertResult.recordset[0].Id,
+    };
+  } catch (error) {
+    console.error('Create destination error:', error);
+    throw error;
+  }
+}
+
+// Get all destinations
+async function getDestinations() {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().query(`
+      SELECT Id, DestinationName, DestinationCode, EmailID, IsActive
+      FROM GatePassDestinationTable
+      ORDER BY DestinationName ASC
+    `);
+
+    return {
+      success: true,
+      data: result.recordset,
+    };
+  } catch (error) {
+    console.error('Get destinations error:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   createLogin,
   loginUser,
@@ -389,4 +457,6 @@ module.exports = {
   createGatePass,
   deleteGatePass,
   updateGatePass,
+  createDestination,
+  getDestinations,
 };
