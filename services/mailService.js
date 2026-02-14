@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { alertRecipients, alertSubjects } = require('../config/mailConfig');
+const { getConnection, sql } = require('../config/database');
 
 const TEMPLATE_DIR = path.join(__dirname, '..', 'templates', 'email');
 
@@ -131,6 +132,39 @@ async function renderTemplate(templateName, templateData) {
   return populateTemplate(raw, templateData);
 }
 
+
+async function lookupDestinationEmail(gatePass) {
+  const pool = await getConnection();
+
+  // Highest confidence: explicit destinationId from frontend.
+  if (gatePass?.destinationId) {
+    const byId = await pool
+      .request()
+      .input('id', sql.Int, gatePass.destinationId)
+      .query('SELECT EmailID FROM GatePassDestinationTable WHERE Id = @id');
+
+    if (byId.recordset[0]?.EmailID) {
+      return byId.recordset[0].EmailID;
+    }
+  }
+
+  // Fallback: try destinationCode (if UI sends it) or the human-readable destination name.
+  const lookupValue = gatePass?.destinationCode || gatePass?.destination;
+  if (lookupValue) {
+    const byCodeOrName = await pool
+      .request()
+      .input('lookup', sql.NVarChar, lookupValue)
+      .query('SELECT TOP 1 EmailID FROM GatePassDestinationTable WHERE DestinationCode = @lookup OR DestinationName = @lookup');
+
+    if (byCodeOrName.recordset[0]?.EmailID) {
+      return byCodeOrName.recordset[0].EmailID;
+    }
+  }
+
+  return null;
+}
+
+
 async function sendEmail({ to, subject, templateName, templateData }) {
   if (!to || !to.length) {
     console.warn('MailService: No recipients configured for this alert. Email skipped.');
@@ -157,9 +191,12 @@ async function sendEmail({ to, subject, templateName, templateData }) {
 }
 
 async function sendGatePassAlert(alertType, gatePassData) {
-  const recipients = alertRecipients[alertType] && alertRecipients[alertType].length
+  const baseRecipients = alertRecipients[alertType] && alertRecipients[alertType].length
     ? alertRecipients[alertType]
     : alertRecipients.DEFAULT;
+
+  const destEmail = await lookupDestinationEmail(gatePassData);
+  const recipients = [...new Set([...baseRecipients, ...(destEmail ? [destEmail] : [])])];
 
   const templateData = buildGatePassTemplateData(alertType, gatePassData);
   const subject = alertSubjects[alertType] || 'Gate Pass Alert';
