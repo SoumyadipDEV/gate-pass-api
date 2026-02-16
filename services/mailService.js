@@ -3,6 +3,7 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 const { alertRecipients, alertSubjects } = require('../config/mailConfig');
 const { getConnection, sql } = require('../config/database');
+const { ensureGatePassPdf } = require('./pdfCacheService');
 
 const TEMPLATE_DIR = path.join(__dirname, '..', 'templates', 'email');
 
@@ -132,6 +133,27 @@ async function renderTemplate(templateName, templateData) {
   return populateTemplate(raw, templateData);
 }
 
+async function buildPdfAttachment(gatePassData) {
+  try {
+    const { pdfBase64 } = await ensureGatePassPdf(gatePassData);
+    const filenamePart =
+      gatePassData?.gatepassNo ||
+      gatePassData?.gatePassNo ||
+      gatePassData?.id ||
+      gatePassData?.GatePassID ||
+      'gatepass';
+
+    return {
+      filename: `gatepass-${filenamePart}.pdf`,
+      content: Buffer.from(pdfBase64, 'base64'),
+      contentType: 'application/pdf',
+    };
+  } catch (error) {
+    console.error('MailService: Failed to build PDF attachment:', error);
+    return null;
+  }
+}
+
 
 async function lookupDestinationEmail(gatePass) {
   const pool = await getConnection();
@@ -165,21 +187,26 @@ async function lookupDestinationEmail(gatePass) {
 }
 
 
-async function sendEmail({ to, subject, templateName, templateData }) {
+async function sendEmail({ to, subject, templateName, templateData, attachments }) {
   if (!to || !to.length) {
     console.warn('MailService: No recipients configured for this alert. Email skipped.');
     return { skipped: true };
   }
 
   const html = await renderTemplate(templateName, templateData);
+  const mailOptions = {
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: to.join(','),
+    subject,
+    html,
+  };
+
+  if (attachments && attachments.length) {
+    mailOptions.attachments = attachments;
+  }
 
   try {
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: to.join(','),
-      subject,
-      html,
-    });
+    const info = await transporter.sendMail(mailOptions);
 
     console.log(`MailService: Email sent to ${to.join(', ')} (messageId: ${info.messageId})`);
     return { messageId: info.messageId, accepted: info.accepted };
@@ -200,12 +227,14 @@ async function sendGatePassAlert(alertType, gatePassData) {
 
   const templateData = buildGatePassTemplateData(alertType, gatePassData);
   const subject = alertSubjects[alertType] || 'Gate Pass Alert';
+  const pdfAttachment = alertType === ALERT_TYPES.CREATED ? await buildPdfAttachment(gatePassData) : null;
 
   return sendEmail({
     to: recipients,
     subject,
     templateName: 'gatepass-alert.html',
     templateData,
+    attachments: pdfAttachment ? [pdfAttachment] : undefined,
   });
 }
 
