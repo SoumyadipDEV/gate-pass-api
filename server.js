@@ -72,6 +72,7 @@ async function startServer() {
   - POST   /api/gatepass         - Create gate pass
   - PATCH  /api/gatepass         - Update gate pass
   - DELETE /api/gatepassdelete/:id - Delete gate pass
+  - GET    /api/gatepass/:id/pdf - Download gate pass PDF (cached)
   - POST   /api/dest/create      - Create destination
   - GET    /api/dest             - List destinations
   

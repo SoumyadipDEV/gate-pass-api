@@ -46,6 +46,15 @@ CREATE TABLE GatePassLineItems (
   FOREIGN KEY (GatePassID) REFERENCES GatePassHeader(GatePassID)
 );
 
+-- Cache generated PDFs to avoid regenerating unchanged gate passes
+CREATE TABLE GatePassPdf (
+  GatePassID NVARCHAR(50) PRIMARY KEY,
+  ETag CHAR(64) NOT NULL,
+  PdfBase64 NVARCHAR(MAX) NOT NULL,
+  CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+  UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+
 -- Sample data for UserDetails
 INSERT INTO UserDetails (Email, UserName, Password, IsActive)
 VALUES 

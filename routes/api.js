@@ -4,6 +4,7 @@ const {
   createLogin,
   loginUser,
   getGatePasses,
+  getGatePassById,
   createGatePass,
   deleteGatePass,
   updateGatePass,
@@ -11,6 +12,7 @@ const {
   getDestinations,
 } = require('../controllers/gatePassController');
 const { sendGatePassCreatedAlert, sendGatePassUpdatedAlert } = require('../services/mailService');
+const { getCachedPdf, ensureGatePassPdf } = require('../services/pdfCacheService');
 
 // Login endpoint
 router.post('/auth/login', async (req, res) => {
@@ -45,6 +47,43 @@ router.get('/gatepass', async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error('Get gate passes endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+});
+
+// Download gate pass PDF (cached with ETag)
+router.get('/gatepass/:id/pdf', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Gate pass ID is required' });
+    }
+
+    const latest = await getGatePassById(id);
+    if (!latest.success) {
+      return res.status(404).json({ success: false, message: 'Gate pass not found' });
+    }
+
+    // Ensure cache is fresh on read: regenerate only if ETag differs.
+    const { etag, pdfBase64 } = await ensureGatePassPdf(latest.data);
+
+    if (req.headers['if-none-match'] && req.headers['if-none-match'].replace(/"/g, '') === etag) {
+      return res.status(304).end();
+    }
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="gatepass-${id}.pdf"`,
+      ETag: `"${etag}"`,
+      'Cache-Control': 'private, max-age=0',
+    });
+    return res.send(Buffer.from(pdfBase64, 'base64'));
+  } catch (error) {
+    console.error('Download gate pass PDF error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -97,11 +136,22 @@ router.post('/gatepass', async (req, res) => {
 
     const result = await createGatePass(gatePassData);
 
-    // Fire-and-forget email to avoid blocking the response path.
-    setImmediate(() => {
-      sendGatePassCreatedAlert(gatePassData).catch((mailError) =>
-        console.error('Create gate pass alert email failed:', mailError)
-      );
+    // Fire-and-forget email and PDF warm (use DB snapshot for consistency) to avoid blocking the response path.
+    setImmediate(async () => {
+      try {
+        await sendGatePassCreatedAlert(gatePassData);
+      } catch (mailError) {
+        console.error('Create gate pass alert email failed:', mailError);
+      }
+
+      try {
+        const latest = await getGatePassById(gatePassData.id);
+        if (latest.success) {
+          await ensureGatePassPdf(latest.data);
+        }
+      } catch (pdfError) {
+        console.error('Create gate pass PDF generation failed:', pdfError);
+      }
     });
 
     res.status(201).json(result);
@@ -159,10 +209,21 @@ router.patch('/gatepass', async (req, res) => {
     const result = await updateGatePass(gatePassData);
 
     if (result.success) {
-      setImmediate(() => {
-        sendGatePassUpdatedAlert(gatePassData).catch((mailError) =>
-          console.error('Update gate pass alert email failed:', mailError)
-        );
+      setImmediate(async () => {
+        try {
+          await sendGatePassUpdatedAlert(gatePassData);
+        } catch (mailError) {
+          console.error('Update gate pass alert email failed:', mailError);
+        }
+
+        try {
+          const latest = await getGatePassById(gatePassData.id);
+          if (latest.success) {
+            await ensureGatePassPdf(latest.data);
+          }
+        } catch (pdfError) {
+          console.error('Update gate pass PDF generation failed:', pdfError);
+        }
       });
     }
 

@@ -179,6 +179,81 @@ async function getGatePasses() {
   }
 }
 
+async function getGatePassById(gatePassID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool
+      .request()
+      .input('gatePassID', sql.NVarChar, gatePassID)
+      .query(`
+        SELECT 
+          h.GatePassID,
+          h.GatePassNo,
+          h.Date,
+          h.Destination,
+          h.CarriedBy,
+          h.Through,
+          h.MobileNo,
+          h.CreatedBy,
+          h.CreatedAt,
+          h.ModifiedBy,
+          h.ModifiedAt,
+          h.IsEnable,
+          h.Returnable,
+          l.LineItemID,
+          l.SlNo,
+          l.Description,
+          l.MakeItem,
+          l.Model,
+          l.SerialNo,
+          l.Qty
+        FROM GatePassHeader h
+        LEFT JOIN GatePassLineItems l ON h.GatePassID = l.GatePassID
+        WHERE h.GatePassID = @gatePassID
+        ORDER BY l.SlNo ASC
+      `);
+
+    if (!result.recordset.length) {
+      return { success: false, message: 'Gate pass not found' };
+    }
+
+    const gatePass = {
+      gatepassNo: result.recordset[0].GatePassNo,
+      date: result.recordset[0].Date,
+      items: [],
+      destination: result.recordset[0].Destination,
+      carriedBy: result.recordset[0].CarriedBy,
+      through: result.recordset[0].Through,
+      mobileNo: result.recordset[0].MobileNo,
+      id: result.recordset[0].GatePassID,
+      createdBy: result.recordset[0].CreatedBy,
+      createdAt: result.recordset[0].CreatedAt,
+      modifiedBy: result.recordset[0].ModifiedBy,
+      modifiedAt: result.recordset[0].ModifiedAt,
+      isEnable: result.recordset[0].IsEnable,
+      returnable: result.recordset[0].Returnable,
+    };
+
+    result.recordset.forEach((row) => {
+      if (row.LineItemID) {
+        gatePass.items.push({
+          slNo: row.SlNo,
+          description: row.Description,
+          makeItem: row.MakeItem,
+          model: row.Model,
+          serialNo: row.SerialNo,
+          qty: row.Qty,
+        });
+      }
+    });
+
+    return { success: true, data: gatePass };
+  } catch (error) {
+    console.error('Get gate pass by id error:', error);
+    throw error;
+  }
+}
+
 // Create new gate pass
 async function createGatePass(gatePassData) {
   try {
@@ -454,6 +529,7 @@ module.exports = {
   createLogin,
   loginUser,
   getGatePasses,
+  getGatePassById,
   createGatePass,
   deleteGatePass,
   updateGatePass,
