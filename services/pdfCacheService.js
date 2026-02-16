@@ -1,5 +1,5 @@
 const { getConnection, sql } = require('../config/database');
-const { computeGatePassEtag, generateGatePassPdf } = require('./pdfService');
+const { computeGatePassEtag, generateGatePassPdf, loadLogoDataUri } = require('./pdfService');
 
 async function getCachedPdf(gatePassID) {
   const pool = await getConnection();
@@ -41,7 +41,8 @@ async function ensureGatePassPdf(gatePassData) {
     throw new Error('Gate pass ID is required to generate PDF.');
   }
 
-  const etag = computeGatePassEtag(gatePassData);
+  const logoDataUri = await loadLogoDataUri();
+  const etag = computeGatePassEtag(gatePassData, logoDataUri || '');
   const cached = await getCachedPdf(gatePassID);
 
   if (cached && cached.etag === etag) {

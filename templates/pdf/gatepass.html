@@ -6,26 +6,79 @@
   <title>Gate Pass</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 12px; font-family: "Segoe UI", Arial, sans-serif; background: #f9fafb; color: #111827; }
-    .print-container { width: 210mm; height: 270mm; margin: 0 auto; background: #fff; }
-    .copy { height: calc(50% - 10px); padding: 10px 12px; border: 1px solid #111; display: flex; flex-direction: column; }
-    .separator { position: relative; margin: 8px 0; }
-    .separator .line { border-top: 1px dotted #9ca3af; }
-    .separator .scissors { position: absolute; left: 50%; transform: translate(-50%, -8px); font-size: 12px; color: #4b5563; }
-    .header { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-    .header .text { text-align: center; padding: 0 64px; transform: translateX(-8px); }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 12px;
+      line-height: 1.4;
+      background: #f9fafb;
+      color: #111;
+    }
+    .print-container {
+      width: 100%;
+      max-width: 210mm;
+      height: calc(297mm - 18mm); /* page height minus PDF margins (8mm top + 10mm bottom) */
+      margin: 0 auto;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .copy {
+      flex: 1 1 0;
+      padding: 12px 14px;
+      border: 1px solid #111;
+      display: grid;
+      grid-template-rows: auto auto auto auto 1fr auto auto;
+      row-gap: 6px;
+    }
+    .separator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 6px;
+      font-size: 12px;
+      color: #4b5563;
+      margin: 0;
+    }
+    .separator .line { flex: 1; border-top: 1px dotted #9ca3af; }
+    .separator .scissors { font-size: 12px; }
+    .header { position: relative; display: flex; align-items: center; justify-content: center; }
+    .header .text { text-align: center; padding: 0 72px; transform: translateX(-6px); }
     .logo { position: absolute; right: 0; top: 50%; transform: translateY(-50%); height: 110px; object-fit: contain; }
-    .title { text-align: center; margin: 6px 0 10px; }
-    .title span { display: inline-block; padding: 4px 10px 6px; border-bottom: 1px solid #111; font-weight: 700; font-size: 13px; letter-spacing: 0.4px; }
-    .auth { font-size: 11px; line-height: 1.35; margin: 0 0 10px; }
-    .details { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
-    .items-wrapper { flex: 1 1 auto; min-height: 150px; max-height: 190px; margin-bottom: 10px; }
+    .title { text-align: center; }
+    .title span { display: inline-block; padding: 4px 12px 6px; border-bottom: 1px solid #111; font-weight: 700; font-size: 13px; letter-spacing: 0.4px; }
+    .auth { margin: 0; }
+    .details { display: flex; justify-content: space-between; font-weight: 700; }
+    .items-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .items-wrapper table { flex: 1 1 auto; height: 100%; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { border: 1px solid #111; padding: 4px 6px; font-size: 11px; line-height: 1.25; text-align: center; word-break: break-word; }
-    th { font-weight: 600; background: #f3f4f6; }
-    .footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 2px 0 10px; font-size: 11px; text-align: center; }
-    .footer p { margin: 0; flex: 1 1 160px; }
-    .signatures table { width: 100%; height: 70px; }
+    th, td {
+      border: 1px solid #111;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.25;
+      text-align: center;
+      word-break: break-word;
+    }
+    th { font-weight: 700; background: #f3f4f6; }
+    .footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      justify-content: space-between;
+      text-align: center;
+      font-weight: 600;
+    }
+    .footer p { margin: 0; flex: 1 1 140px; }
+    .signatures-table { width: 100%; height: 90px; border-collapse: collapse; }
+    .signature-cell { height: 90px; padding: 14px 8px; }
   </style>
 </head>
 <body>
@@ -34,7 +87,7 @@
       <div class="header">
         <div class="text">
           <h1 style="margin:0; font-size:12px; font-weight:700; letter-spacing:0.4px; color:#111;">SURAKSHA DIAGNOSTIC LIMITED</h1>
-          <p style="margin:2px 0 0; font-size:11px; color:#4b5563;">12/1, Premises No. 02-0327, DG Block(Newtown), Action Area 1D, Kolkata - 700156</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#4b5563;">12/1, Premises No. 02-0327, DG Block(Newtown), Action Area 1D, Kolkata - 700156</p>
         </div>
         <img class="logo" src="{{logoDataUri}}" alt="Suraksha Logo" />
       </div>
@@ -78,8 +131,8 @@
         <p><strong>Through:</strong> {{through}}</p>
       </div>
 
-      <div class="signatures">
-        <table>
+      <div>
+        <table class="signatures-table">
           <thead>
             <tr>
               <th>Dispatched By</th>
@@ -89,9 +142,9 @@
           </thead>
           <tbody>
             <tr>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td class="signature-cell"></td>
+              <td class="signature-cell"></td>
+              <td class="signature-cell"></td>
             </tr>
           </tbody>
         </table>
@@ -107,7 +160,7 @@
       <div class="header">
         <div class="text">
           <h1 style="margin:0; font-size:12px; font-weight:700; letter-spacing:0.4px; color:#111;">SURAKSHA DIAGNOSTIC LIMITED</h1>
-          <p style="margin:2px 0 0; font-size:11px; color:#4b5563;">12/1, Premises No. 02-0327, DG Block(Newtown), Action Area 1D, Kolkata - 700156</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#4b5563;">12/1, Premises No. 02-0327, DG Block(Newtown), Action Area 1D, Kolkata - 700156</p>
         </div>
         <img class="logo" src="{{logoDataUri}}" alt="Suraksha Logo" />
       </div>
@@ -151,8 +204,8 @@
         <p><strong>Through:</strong> {{through}}</p>
       </div>
 
-      <div class="signatures">
-        <table>
+      <div>
+        <table class="signatures-table">
           <thead>
             <tr>
               <th>Dispatched By</th>
@@ -162,9 +215,9 @@
           </thead>
           <tbody>
             <tr>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td class="signature-cell"></td>
+              <td class="signature-cell"></td>
+              <td class="signature-cell"></td>
             </tr>
           </tbody>
         </table>

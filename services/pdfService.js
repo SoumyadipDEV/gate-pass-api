@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 
 const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'pdf', 'gatepass.html');
+const LOGO_DATA_URI_FILE = path.join(__dirname, '..', 'templates', 'pdf', 'logoDataUri');
+const LOGO_IMAGE_FILE = path.join(__dirname, '..', 'templates', 'pdf', 'logo.png');
 
 let cachedTemplate = null;
 let browserPromise = null;
@@ -64,6 +66,50 @@ async function loadTemplate() {
   return cachedTemplate;
 }
 
+async function loadLogoDataUri() {
+  // Highest precedence: explicit data URI env.
+  if (process.env.LOGO_DATA_URI) return process.env.LOGO_DATA_URI.trim();
+
+  // Next: env-provided file path or default PNG in repo.
+  const logoPathEnv = process.env.LOGO_PATH ? path.resolve(process.env.LOGO_PATH) : null;
+  const logoPath = logoPathEnv || LOGO_IMAGE_FILE;
+
+  const tryReadBinaryLogo = async (filePath) => {
+    try {
+      const binary = await fs.promises.readFile(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mime =
+        ext === '.jpg' || ext === '.jpeg'
+          ? 'image/jpeg'
+          : ext === '.gif'
+          ? 'image/gif'
+          : ext === '.webp'
+          ? 'image/webp'
+          : 'image/png';
+      return `data:${mime};base64,${binary.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  };
+
+  // Try binary logo file first.
+  const binaryLogo = await tryReadBinaryLogo(logoPath);
+  if (binaryLogo) {
+    return binaryLogo;
+  }
+
+  // Fallback: text file containing base64 or full data URI.
+  try {
+    const raw = await fs.promises.readFile(LOGO_DATA_URI_FILE, 'utf8');
+    const value = raw.trim();
+    if (!value) return null;
+    const hasDataPrefix = /^data:/i.test(value);
+    return hasDataPrefix ? value : `data:image/png;base64,${value}`;
+  } catch {
+    return null;
+  }
+}
+
 function injectTemplate(template, data) {
   return template.replace(/{{\s*([\w]+)\s*}}/g, (_, key) => (data[key] !== undefined ? data[key] : ''));
 }
@@ -100,15 +146,16 @@ function normalizeGatePass(gatePass) {
   };
 }
 
-function computeGatePassEtag(gatePass) {
+function computeGatePassEtag(gatePass, logoDataUri = '') {
   const normalized = normalizeGatePass(gatePass);
-  const json = JSON.stringify(normalized);
+  const json = JSON.stringify({ ...normalized, _logo: logoDataUri });
   return crypto.createHash('sha256').update(json).digest('hex');
 }
 
 async function generateGatePassHtml(gatePass) {
   const template = await loadTemplate();
   const itemsRows = buildItemsRows(gatePass.items);
+  const logoDataUriFromFileOrEnv = await loadLogoDataUri();
   const templateData = {
     gatepassNo: escapeHtml(gatePass.gatepassNo || gatePass.gatePassNo || ''),
     returnableLabel: isReturnable(gatePass.returnable) ? '(Returnable Items)' : '',
@@ -120,7 +167,7 @@ async function generateGatePassHtml(gatePass) {
     itemsRows,
     logoDataUri:
       gatePass.logoDataUri ||
-      process.env.LOGO_DATA_URI ||
+      logoDataUriFromFileOrEnv ||
       'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="%23e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-family="Segoe UI, Arial" font-size="16">Logo</text></svg>',
   };
 
@@ -156,4 +203,5 @@ module.exports = {
   generateGatePassPdf,
   computeGatePassEtag,
   isReturnable,
+  loadLogoDataUri,
 };
